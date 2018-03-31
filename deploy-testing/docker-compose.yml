@@ -1,0 +1,43 @@
+---
+# 注意: docker-compose 相关命令默认是在包含 docker-compose.yml 的目录下执行。
+#     docker-compose up :         创建容器并启动(不使用 -d 参数时在前台运行, Ctrl-C 停止)
+#     docker-compose down :       停止并删除容器
+#     docker-compose start/stop : 启动/停止 当前服务的所有容器
+#     docker-compose rm :         删除当前服务的所有容器
+#     docker-compose logs :       查看日志(支持 -f 参数)
+#     docker-compose ps :         类似 docker ps
+version: '2'
+services:
+    apache2-php:
+        image: thinkbase.net/apache2-php:2.0
+        ports:
+            - "8080:8080"
+        volumes:
+            - ./resources/sites-enabled:/sites-enabled
+            - ./resources/php:/opt/php
+            - ../phpems/phpems:/var/www/html/phpems
+            - ./runtime/phpems-data:/var/www/html/phpems/data
+            - ./runtime/phpems-files-attach:/var/www/html/phpems/files/attach
+        environment:
+            - LATEST_PHP_INI=/opt/php/latest-config.ini
+            - PHPEMS_DB_NAME=phpems
+            - PHPEMS_DB_HOST=phpems-db
+            - PHPEMS_DB_USER=root
+            - PHPEMS_DB_PASS=20180331
+        links:
+            - phpems-db
+
+    phpems-db:
+        image: thinkbase.net/mysql:1.1
+        volumes:
+            - ./runtime/mysql-data:/data
+            - ../phpems/phpems:/phpems
+        environment:
+            - MYSQL_ROOT_PWD=20180331
+            - MYSQL_INIT_SQL=CREATE SCHEMA `phpems` DEFAULT CHARACTER SET utf8 
+            - |                     # YAML 多行字符串的写法
+              MYSQL_INIT_SQL=
+                CREATE SCHEMA `phpems` DEFAULT CHARACTER SET utf8 ;
+                -- 导入测试数据
+                use phpems;
+                source /phpems/phpems.sql;
